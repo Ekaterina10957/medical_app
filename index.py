@@ -7,6 +7,7 @@ from controller import LabAssistants_Controller, Administrators_controllers, Acc
 from controller.LabAssistants_Controller import add_lab
 from controller import patient_Controller
 from view import LabAssistants_view, Accountants_view
+import requests
 def show_lab_menu():
     """Отображает меню лаборанта."""
     print("\n--- Меню лаборанта ---")
@@ -44,20 +45,40 @@ while True:
             print("1. вход")
             print("2. регистрация")
             klick =input("выберите действие: ")
+            import requests # Обязательно импортируй requests
+
             if klick == "1":  # Вход
-                login, password = entry_lab_data()
-                if LabAssistants_Controller.get_lab_by_login(login, password):
-                    LabAssistants_view.display_login_success()
-                    show_lab_menu() 
-                else:
-                    LabAssistants_view.display_login_failure()
+                login, password = entry_lab_data()  # Получаем от пользователя
+
+                # 1. Определяем URL API-эндпоинта
+                api_url = "http://127.0.0.1:8000/lab_assistants/login"
+
+                # 2. Формируем JSON-тело запроса
+                payload = {"login": login, "password": password}
+
+                try:
+                    # 3. Отправляем POST-запрос к API
+                    response = requests.post(api_url, json=payload)
+
+                    # 4. Обрабатываем ответ от API
+                    if response.status_code == 200:  # Успешный вход
+                        lab_data = response.json()  # Получаем данные лаборанта из JSON-ответа
+                        LabAssistants_view.display_login_success(lab_data)  # Отображаем успех с данными
+                        show_lab_menu()
+                    elif response.status_code == 401:  # Неверный логин или пароль
+                        error_detail = response.json().get("detail", "Неверный логин или пароль.")
+                        LabAssistants_view.display_login_failure(error_detail)  # Отображаем ошибку
+                    else:  # Другие ошибки API
+                        LabAssistants_view.display_error(f"Ошибка API: {response.status_code} - {response.text}")
+                except requests.exceptions.ConnectionError:
+                    LabAssistants_view.display_error("Не удалось подключиться к API-серверу. Убедитесь, что он запущен.")
             else:
-                klick == "2"
-                login_data, full_name_data, last_login_data, services_provided_data, password  = input_lab_data()
-                success = add_lab(login_data, full_name_data, last_login_data, services_provided_data, password)
-                show_add_lab_result(success)
-            #if "успешно добавлен" in success:
-                #show_lab_menu()
+                    klick == "2"
+                    login_data, full_name_data, last_login_data, services_provided_data, password  = input_lab_data()
+                    success = add_lab(login_data, full_name_data, last_login_data, services_provided_data, password)
+                    show_add_lab_result(success)
+                #if "успешно добавлен" in success:
+                    #show_lab_menu()
                 
         elif choice == "2":
             print("1. вход")
