@@ -46,8 +46,13 @@ def show_add_lab_result(success):
     else:
         print("Ошибка при добавлении пользователя лаборанта")
 
-def display_login_success():
-    print("Вход успешен!")
+# LabAssistants_view.py
+def display_login_success(lab_data):
+    print("\nВход успешно выполнен!")
+    print(f"ID: {lab_data['id']}")
+    print(f"Логин: {lab_data['login']}")
+    print(f"Полное имя: {lab_data['full_name']}")
+    # ... отобрази другие данные лаборанта
 
 def display_login_failure():
     print("Неверный логин или пароль.")
@@ -55,11 +60,17 @@ def display_login_failure():
 def display_registration_success():
     print("Регистрация прошла успешно!")
 
-def display_registration_failure():
-    print("Не удалось зарегистрировать пользователя.")
+# view/LabAssistants_view.py
+def display_login_failure(message: str = "Вход не выполнен. Неверный логин или пароль."): # Добавь 'message' как параметр, можно с дефолтным значением
+    print(f"\n{message}") # Используй переданное сообщение
+
 
 def display_user_not_found():
     print("Пользователь не найден.")
+# view/LabAssistants_view.py
+def display_error(message: str = "Произошла неизвестная ошибка."): # Можно добавить дефолтное значение
+    print(f"\nОшибка: {message}")
+
 
 
 
