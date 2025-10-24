@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine, Session
 import os
 from dotenv import load_dotenv
 import psycopg2
@@ -16,3 +16,9 @@ def init_db():
     print(DATABASE_URL)
     SQLModel.metadata.create_all(engine)
     
+def get_session():
+    """
+    Возвращает сессию базы данных. Используется FastAPI как зависимость.
+    """
+    with Session(engine) as session:
+        yield session # 'yield'
