@@ -1,10 +1,67 @@
-from model.Administrators import Administrators
-from  argon2 import PasswordHasher,exceptions as argon2_exceptions
+from model.Administrators import Administrator
+from argon2 import PasswordHasher,exceptions as argon2_exceptions
 from typing import Optional
 from datetime import date, datetime
 from sqlmodel import Session, select
 from db.database import engine
-def add_admin(login_data: str, phone_data: Optional[str] = None, password:str ="")->Optional[Administrators]:
+from passlib.hash import argon2
+from schemas.Administrators import AdministratorsCreate
+
+
+ph = argon2.using(rounds=4) 
+
+def get_password_hash(password: str) -> str:
+    """Хеширует пароль."""
+    return ph.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Проверяет нехешированный пароль на соответствие хешированному."""
+    try:
+        ph.verify(hashed_password, plain_password)
+        return True
+    except argon2_exceptions.VerifyMismatchError:
+        return False
+    
+
+
+class Administrators_controllers:
+    @staticmethod
+    def get_admin_by_login_for_auth(session: Session, login: str) -> Optional[Administrator]:
+        """
+        Ищет админитсратора по логину для целей авторизации (получения хешированного пароля).
+        Не проверяет пароль.
+        """
+        statement = select(Administrator).where(Administrator.login == login)
+        return session.exec(statement).first()
+    @staticmethod
+    def create_administrators(session: Session, admin_data: AdministratorsCreate) -> Administrator:
+        """
+        Регистрирует нового администратора.
+        Принимает AdministratorsCreate, хеширует пароль и сохраняет в БД.
+        """
+        hashed_password = get_password_hash(admin_data.password)
+        
+        db_administrators = Administrator(
+            login=admin_data.login,
+            hashed_password=hashed_password,
+            phone=admin_data.phone
+        )
+        
+        session.add(db_administrators)
+        session.commit()
+        session.refresh(db_administrators) 
+        return db_administrators
+    @staticmethod
+    def update_admin_last_login(session: Session, admin: Administrator) -> Administrator:
+        """Обновляет время последнего входа администратора."""
+        admin.last_login = datetime.utcnow()
+        session.add(admin)
+        session.commit()
+        session.refresh(admin)
+        return admin
+    
+
+def add_admin(login_data: str, phone_data: Optional[str] = None, password:str ="")->Optional[Administrator]:
     """
     Добавление клиента
     :param conn: Объект соединения с базой данных
@@ -16,9 +73,7 @@ def add_admin(login_data: str, phone_data: Optional[str] = None, password:str ="
     ph=PasswordHasher()
     hash_pass = ph.hash(password)
     with Session(engine) as session:
-        # = select(Administrators).where(Administrators.login == login_data)
-        #if find_admin is None:
-            adinistrator = Administrators(login=login_data, phone=phone_data, hashed_password= hash_pass)
+            adinistrator = Administrator(login=login_data, phone=phone_data, hashed_password= hash_pass)
             session.add(adinistrator)
             session.commit()
             session.refresh(adinistrator)
@@ -36,7 +91,7 @@ def get_admin_by_login(login: str, password: str):
 
     ph = PasswordHasher()
     with Session(engine) as session:
-        statement = select(Administrators).where(Administrators.login == login)
+        statement = select(Administrator).where(Administrator.login == login)
         admin = session.exec(statement).first()
         if admin is None:
             return None
