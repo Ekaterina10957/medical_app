@@ -1,4 +1,4 @@
-from view.LabAssistants_view import input_lab_data,entry_lab_data, show_add_lab_result
+from view.LabAssistants_view import input_lab_data,entry_lab_data, show_add_lab_result, display_register_failure
 from view.Administrators_view import input_admin_data, show_add_admin_result,entry_admin_data
 from view.Accountants_view import input_buh_data, show_add_buh_result, entry_buh_data
 from view.patient_view import input_patient_data, show_add_patient_result, input_patient_pass_by_delete, show_delete_patient_result, input_patient_phone, show_input_patient_phone
@@ -6,7 +6,7 @@ from db.database import init_db
 from controller import LabAssistants_Controller, Administrators_controllers, Accountants_controller,patient_Controller
 from controller.LabAssistants_Controller import add_lab
 from controller import patient_Controller
-from view import LabAssistants_view, Accountants_view
+from view import LabAssistants_view, Accountants_view,Administrators_view
 import requests
 def show_lab_menu():
     """Отображает меню лаборанта."""
@@ -45,38 +45,44 @@ while True:
             print("1. вход")
             print("2. регистрация")
             klick =input("выберите действие: ")
-            import requests # Обязательно импортируй requests
+            import requests 
 
-            if klick == "1":  # Вход
-                login, password = entry_lab_data()  # Получаем от пользователя
-
-                # 1. Определяем URL API-эндпоинта
-                api_url = "http://127.0.0.1:8000/lab_assistants/login"
-
-                # 2. Формируем JSON-тело запроса
+            if klick == "1": 
+                login, password = entry_lab_data()  
+                api_url_lab = "http://127.0.0.1:8000/lab_assistants/login"
                 payload = {"login": login, "password": password}
-
                 try:
-                    # 3. Отправляем POST-запрос к API
-                    response = requests.post(api_url, json=payload)
-
-                    # 4. Обрабатываем ответ от API
-                    if response.status_code == 200:  # Успешный вход
-                        lab_data = response.json()  # Получаем данные лаборанта из JSON-ответа
-                        LabAssistants_view.display_login_success(lab_data)  # Отображаем успех с данными
+                    response = requests.post(api_url_lab, json=payload)
+                    if response.status_code == 200:
+                        lab_data = response.json() 
+                        LabAssistants_view.display_login_success(lab_data)  
                         show_lab_menu()
-                    elif response.status_code == 401:  # Неверный логин или пароль
+                    elif response.status_code == 401:  
                         error_detail = response.json().get("detail", "Неверный логин или пароль.")
-                        LabAssistants_view.display_login_failure(error_detail)  # Отображаем ошибку
-                    else:  # Другие ошибки API
+                        LabAssistants_view.display_login_failure(error_detail) 
+                    else:  
                         LabAssistants_view.display_error(f"Ошибка API: {response.status_code} - {response.text}")
                 except requests.exceptions.ConnectionError:
                     LabAssistants_view.display_error("Не удалось подключиться к API-серверу. Убедитесь, что он запущен.")
             else:
                     klick == "2"
-                    login_data, full_name_data, last_login_data, services_provided_data, password  = input_lab_data()
-                    success = add_lab(login_data, full_name_data, last_login_data, services_provided_data, password)
-                    show_add_lab_result(success)
+                    login, full_name, password  = input_lab_data()
+                    api_url = "http://127.0.0.1:8000/lab_assistants/login"
+
+                    payload = {"login": login, "full_name": full_name, "password": password }
+                    try:  
+                        response = requests.post(api_url, json=payload)
+                        if response.status_code == 201:  # Успешный вход
+                            lab_data = response.json()
+                            LabAssistants_view.display_registration_success(lab_data)
+                            show_lab_menu()
+                        elif response.status_code == 400:
+                            error_detail = response.json().get("detail", "Администратор уже зарегистрирован")
+                            LabAssistants_view.display_register_failure(error_detail)
+                        else:
+                            LabAssistants_view.display_error(f"Ошибка API: {response.status_code} - {response.text}")
+                    except requests.exceptions.ConnectionError:
+                        LabAssistants_view.display_error("Не удалось подключиться к API-серверу. Убедитесь, что он запущен.")
                 #if "успешно добавлен" in success:
                     #show_lab_menu()
                 
@@ -86,16 +92,39 @@ while True:
             klick =input("выберите действие: ")
             if klick == "1":  # Вход
                 login, password = entry_admin_data()
-                if LabAssistants_Controller.get_admin_by_login(login, password):
-                    LabAssistants_view.display_login_success()
-                    show_admin_menu()
+                api_url_admin = "http://127.0.0.1:8000/admin/login"
+                admin_json = {"login": login, "password":password}
+                try:
+                    response = requests.post(api_url_admin, json=admin_json)
+                    if response.status_code == 200:  
+                        admin_data = response.json()  
+                        Administrators_view.display_login_success(admin_data)
+                        show_admin_menu()
+                    elif response.status_code == 401: 
+                        error_detail = response.json().get("detail", "Неверный логин или пароль.")
+                        Administrators_view.login_failure(error_detail) 
+                    else:  
+                        Administrators_view.display_error(f"Ошибка API: {response.status_code} - {response.text}")
+                except requests.exceptions.ConnectionError:
+                    Administrators_view.display_error("Не удалось подключиться к API-серверу. Убедитесь, что он запущен.")
             else:
                 klick == "2"
-                login, password = input_admin_data()
-                success = Administrators_controllers.add_admin(login, password)
-                show_add_admin_result(success)
-            #if "успешно добавлен" in success:
-            #       show_admin_menu()
+                login, password, phone = input_admin_data()
+                admin_api_url = "http://127.0.0.1:8000/admin/register"
+                admin_json = {"login": login, "password":password, "phone": phone}
+                try:  
+                        response = requests.post(admin_api_url, json=admin_json)
+                        if response.status_code == 200:  
+                            admin_data = response.json()
+                            Administrators_view.display_registration_success(admin_data)
+                            show_admin_menu()
+                        elif response.status_code == 400:
+                            error_detail = response.json().get("detail", "Администратор уже зарегистрирован")
+                            Administrators_view.display_register_failure(error_detail)
+                        else:
+                            Administrators_view.display_error(f"Ошибка API: {response.status_code} - {response.text}")
+                except requests.exceptions.ConnectionError:
+                        Administrators_view.display_error("Не удалось подключиться к API-серверу. Убедитесь, что он запущен.")
                 
         elif choice == "3":
             print("1. вход")
