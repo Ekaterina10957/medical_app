@@ -6,25 +6,10 @@ def input_lab_data() -> Tuple[str, str, Optional[datetime], Optional[str], str]:
     Коммуникация с пользователем. Заполнение информации о пользователе лаборант для регистрации
     :return:
     """
-    login_data = input("Логин: ")
-    full_name_data = input("ФИО: ")
-
-    last_login_data = input("последний вход (YYYY-MM-DD HH:MM:SS, оставьте пустым, если нет): ")
-    if last_login_data:
-        try:
-            last_login_data = datetime.strptime(last_login_data, "%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            print("Неверный формат даты.  Значение будет пропущено.")
-            last_login_data = None
-    else:
-        last_login_data = None
-
-    services_provided_data = input("предоставляемые услуги (оставьте пустым, если нет): ")
-    if not services_provided_data:
-        services_provided_data = None
-
+    login = input("Логин: ")
+    full_name= input("ФИО: ")
     password = input("Пароль: ")
-    return login_data, full_name_data, last_login_data, services_provided_data, password
+    return login, full_name, password
 
 def entry_lab_data()-> tuple[str, str]:
     """
@@ -54,11 +39,16 @@ def display_login_success(lab_data):
     print(f"Полное имя: {lab_data['full_name']}")
     # ... отобрази другие данные лаборанта
 
-def display_login_failure():
-    print("Неверный логин или пароль.")
 
-def display_registration_success():
+
+def display_registration_success(lab_data):
     print("Регистрация прошла успешно!")
+    print(f"ID: {lab_data['id']}")
+    print(f"Логин: {lab_data['login']}")
+    print(f"Полное имя: {lab_data['full_name']}")
+
+def display_register_failure(message: str = "Вход не выполнен. Лаборант уже зарегистрирован"):
+    print(f"\n{message}")
 
 # view/LabAssistants_view.py
 def display_login_failure(message: str = "Вход не выполнен. Неверный логин или пароль."): # Добавь 'message' как параметр, можно с дефолтным значением
