@@ -1,3 +1,4 @@
+import psycopg2
 from model.Administrators import Administrator
 from argon2 import PasswordHasher,exceptions as argon2_exceptions
 from typing import Optional
