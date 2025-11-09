@@ -5,12 +5,12 @@ from typing import Optional
 from datetime import date, datetime
 from sqlmodel import Session, select
 from db.database import engine
-from passlib.hash import argon2 # Убедись, что используешь правильный хешер
-from model.LabAssistants import LabAssistants # Убедись, что путь правильный
+from passlib.hash import argon2 
+from model.LabAssistants import LabAssistants 
 from schemas.LabAssistant import LabAssistantCreate
 
 
-ph = argon2.using(rounds=4) # Создаем экземпляр Argon2PasswordHasher
+ph = argon2.using(rounds=4) 
 
 def get_password_hash(password: str) -> str:
     """Хеширует пароль."""
