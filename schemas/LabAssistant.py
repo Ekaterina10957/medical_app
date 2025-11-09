@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -29,4 +29,4 @@ class LabAssistantPublic(BaseModel):
     services_provided: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        ConfigDict(from_attributes=True)
