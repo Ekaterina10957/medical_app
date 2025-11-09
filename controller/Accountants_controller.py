@@ -1,10 +1,66 @@
 import psycopg2
 from model.Accountants import Accountants
-from  argon2 import PasswordHasher,exceptions as argon2_exceptions
+from argon2 import PasswordHasher,exceptions as argon2_exceptions
 from typing import Optional
 from datetime import date, datetime
 from sqlmodel import Session, select
 from db.database import engine
+from passlib.hash import argon2
+from schemas.Accountant import AccountantCreate
+
+
+ph = argon2.using(rounds=4) 
+
+def get_password_hash(password: str) -> str:
+    """Хеширует пароль."""
+    return ph.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Проверяет нехешированный пароль на соответствие хешированному."""
+    try:
+        ph.verify(hashed_password, plain_password)
+        return True
+    except argon2_exceptions.VerifyMismatchError:
+        return False
+    
+
+
+class Accountants_controller:
+    @staticmethod
+    def get_accountant_by_login_for_auth(session: Session, login: str) -> Optional[Accountants]:
+        """
+        Ищет бухгалтера по логину для целей авторизации (получения хешированного пароля).
+        Не проверяет пароль.
+        """
+        statement = select(Accountants).where(Accountants.login == login)
+        return session.exec(statement).first()
+    @staticmethod
+    def create_accountant(session: Session, accountant_data: AccountantCreate) -> Accountants:
+        """
+        Регистрирует нового бухгалтера.
+        Принимает AccountantCreate, хеширует пароль и сохраняет в БД.
+        """
+        hashed_password = get_password_hash(accountant_data.password)
+        
+        db_accountant = Accountants(
+            login=accountant_data.login,
+            full_name=accountant_data.full_name,
+            hashed_password=hashed_password
+            
+        )
+        
+        session.add(db_accountant)
+        session.commit()
+        session.refresh(db_accountant) 
+        return db_accountant
+    @staticmethod
+    def update_accountant_last_login(session: Session, accountant:Accountants) -> Accountants:
+        """Обновляет время последнего входа бухгалтера ."""
+        accountant.last_login = datetime.utcnow()
+        session.add(accountant)
+        session.commit()
+        session.refresh(accountant)
+        return accountant
 
 def add_buh(login_data:str, full_name_data: str,last_login_data:Optional[datetime] = None,billed_insurance_companies_data: Optional[str] = None, password: str ="" )->Optional[Accountants]:
     """
