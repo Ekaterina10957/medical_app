@@ -1,6 +1,6 @@
 from view.LabAssistants_view import input_lab_data,entry_lab_data, show_add_lab_result, display_register_failure
 from view.Administrators_view import input_admin_data, show_add_admin_result,entry_admin_data
-from view.Accountants_view import input_buh_data, show_add_buh_result, entry_buh_data
+from view.Accountants_view import input_buh_data, entry_buh_data
 from view.patient_view import input_patient_data, show_add_patient_result, input_patient_pass_by_delete, show_delete_patient_result, input_patient_phone, show_input_patient_phone
 from db.database import init_db
 from controller import LabAssistants_Controller, Administrators_controllers, Accountants_controller,patient_Controller
@@ -132,15 +132,40 @@ while True:
             klick =input("выберите действие: ")
             if klick == "1":  # Вход
                 login, password = entry_buh_data()
-                if Accountants_controller.get_buh_by_login(login, password):
-                    Accountants_view.display_login_success()
-                    show_buh_menu()
+                api_url_accuntant = "http://127.0.0.1:8000/accountant/login"
+                accuntant_json = {"login": login, "password":password}
+                try:
+                    response = requests.post(api_url_accuntant, json=accuntant_json)
+                    if response.status_code == 200:  
+                        accuntant_data = response.json()  
+                        Accountants_view.display_login_success(accuntant_data)
+                        show_buh_menu()
+                    elif response.status_code == 401: 
+                        error_detail = response.json().get("detail", "Неверный логин или пароль.")
+                        Accountants_view.login_failure(error_detail) 
+                    else:  
+                        Accountants_view.display_error(f"Ошибка API: {response.status_code} - {response.text}")
+                except requests.exceptions.ConnectionError:
+                    Accountants_view.display_error("Не удалось подключиться к API-серверу. Убедитесь, что он запущен.")
             else:
-                login, full_name = input_buh_data()
-                success = Accountants_controller.add_buh(login, full_name)
-                show_add_buh_result(success)
-                #if "успешно добавлен" in success:
-                    #show_buh_menu()
+                klick == "2"
+                login, password, full_name = input_buh_data()
+                api_url_accuntant = "http://127.0.0.1:8000/accountant/register"
+                accuntant_json = {"login": login, "password":password, "full_name": full_name}
+                try:  
+                        response = requests.post(api_url_accuntant, json=accuntant_json)
+                        if response.status_code == 200:  
+                            accuntant_data = response.json()
+                            Accountants_view.display_registration_success(accuntant_data)
+                            show_buh_menu()
+                        elif response.status_code == 400:
+                            error_detail = response.json().get("detail", "Бухгалтер уже зарегистрирован")
+                            Accountants_view.display_register_failure(error_detail)
+                        else:
+                            Accountants_view.display_error(f"Ошибка API: {response.status_code} - {response.text}")
+                except requests.exceptions.ConnectionError:
+                        Accountants_view.display_error("Не удалось подключиться к API-серверу. Убедитесь, что он запущен.")
+                
                 
         elif choice == "4":
             tuple_of_data = input_patient_data()
